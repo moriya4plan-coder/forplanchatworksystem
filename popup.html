@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Chatwork 一括既読 | For-Plan</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy:  #0B1F3A;
+      --blue:  #1157CC;
+      --sky:   #3B9BFF;
+      --white: #F4F7FC;
+      --muted: #8A9BBB;
+      --border: rgba(255,255,255,0.08);
+      --glass:  rgba(255,255,255,0.05);
+      --green: #22D48F;
+      --red:   #FF5370;
+      --glow:  0 0 24px rgba(59,155,255,0.35);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      width: 340px;
+      background: var(--navy);
+      color: var(--white);
+      font-family: 'Noto Sans JP', sans-serif;
+      overflow: hidden;
+    }
+    body::before {
+      content:''; position:fixed; top:-80px; right:-80px;
+      width:260px; height:260px;
+      background:radial-gradient(circle,rgba(17,87,204,.22) 0%,transparent 70%);
+      pointer-events:none;
+    }
+
+    /* ── Header ── */
+    .header {
+      padding: 16px 20px 13px;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .brand { display:flex; align-items:center; gap:10px; }
+    .brand-logo { height:20px; filter:brightness(0) invert(1); opacity:.9; }
+    .brand-logo-fallback { font-family:'DM Mono',monospace; font-size:12px; color:var(--white); letter-spacing:.06em; display:none; }
+    .divider { width:1px; height:14px; background:var(--border); }
+    .brand-sub { font-size:11px; color:var(--muted); letter-spacing:.05em; }
+    .badge-ent {
+      background: linear-gradient(135deg,var(--blue),var(--sky));
+      color:#fff; font-size:9px; font-weight:700; letter-spacing:.08em;
+      padding:3px 8px; border-radius:99px;
+    }
+
+    /* ── Token Section ── */
+    .token-section {
+      margin: 14px 16px 0;
+      padding: 14px;
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .token-label {
+      font-size:11px; color:var(--muted); letter-spacing:.06em;
+      text-transform:uppercase; margin-bottom:8px;
+      display:flex; align-items:center; gap:6px;
+    }
+    .token-label .dot { width:6px; height:6px; border-radius:50%; background:var(--muted); }
+    .token-label .dot.ok { background:var(--green); box-shadow:0 0 6px var(--green); }
+    .token-row { display:flex; gap:8px; }
+    .token-input {
+      flex:1; padding:9px 12px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--white);
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .token-input::placeholder { color:var(--muted); }
+    .token-input:focus { border-color: var(--sky); }
+    .btn-save {
+      padding: 9px 14px;
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--sky);
+      font-size: 12px; font-weight:700;
+      cursor: pointer; white-space:nowrap;
+      transition: all .2s;
+    }
+    .btn-save:hover { background:rgba(59,155,255,.12); border-color:var(--sky); }
+    .token-hint {
+      margin-top:7px; font-size:10px; color:var(--muted); line-height:1.6;
+    }
+    .token-hint a { color:var(--sky); text-decoration:none; }
+
+    /* ── Counter ── */
+    .counter-wrap {
+      margin: 12px 16px 0;
+      padding: 16px;
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      display: flex; align-items:center; gap:14px;
+    }
+    .counter-num {
+      font-family:'DM Mono',monospace; font-size:48px; font-weight:500; line-height:1;
+      background:linear-gradient(135deg,var(--sky) 0%,#7CB9FF 100%);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+      min-width:66px; text-align:center; transition:all .3s;
+    }
+    .counter-num.zero { background:none; -webkit-background-clip:unset; -webkit-text-fill-color:var(--muted); }
+    .counter-detail { flex:1; }
+    .counter-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:4px; }
+    .counter-sub { font-size:12px; color:var(--white); font-weight:500; line-height:1.5; }
+
+    /* ── Main Button ── */
+    .btn-main {
+      display:flex; align-items:center; justify-content:center; gap:8px;
+      width:calc(100% - 32px); margin:12px 16px 0;
+      padding:14px;
+      background:linear-gradient(135deg,var(--blue),var(--sky));
+      border:none; border-radius:12px;
+      color:#fff; font-family:'Noto Sans JP',sans-serif;
+      font-size:14px; font-weight:700; letter-spacing:.02em;
+      cursor:pointer; transition:all .2s; position:relative; overflow:hidden;
+    }
+    .btn-main::after {
+      content:''; position:absolute; inset:0;
+      background:rgba(255,255,255,.12);
+      transform:translateX(-100%) skewX(-15deg); transition:transform .4s;
+    }
+    .btn-main:hover:not(:disabled)::after { transform:translateX(120%) skewX(-15deg); }
+    .btn-main:hover:not(:disabled) { transform:translateY(-1px); box-shadow:var(--glow); }
+    .btn-main:disabled { opacity:.4; cursor:not-allowed; }
+    .btn-main.running { background:linear-gradient(135deg,#1a2a40,#1e3155); border:1px solid var(--sky); color:var(--sky); }
+
+    /* ── Progress ── */
+    .progress-section { margin:10px 16px 0; display:none; }
+    .progress-section.show { display:block; }
+    .progress-track { height:3px; background:rgba(255,255,255,.08); border-radius:99px; overflow:hidden; }
+    .progress-bar {
+      height:100%; border-radius:99px;
+      background:linear-gradient(90deg,var(--blue),var(--sky));
+      width:0%; transition:width .4s ease;
+    }
+    .progress-info { display:flex; justify-content:space-between; margin-top:5px; font-family:'DM Mono',monospace; font-size:10px; color:var(--muted); }
+
+    /* ── Toast ── */
+    .toast { margin:10px 16px 0; padding:10px 14px; border-radius:8px; font-size:12px; display:none; align-items:center; gap:8px; line-height:1.5; }
+    .toast.show { display:flex; }
+    .toast.success { background:rgba(34,212,143,.1); border:1px solid rgba(34,212,143,.25); color:var(--green); }
+    .toast.error   { background:rgba(255,83,112,.1);  border:1px solid rgba(255,83,112,.25);  color:var(--red); }
+    .toast.info    { background:rgba(59,155,255,.1);  border:1px solid rgba(59,155,255,.25);  color:var(--sky); }
+
+    /* ── Footer ── */
+    .footer {
+      margin-top:14px; padding:11px 16px 14px;
+      border-top:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .footer-note { font-size:10px; color:var(--muted); line-height:1.6; }
+    .footer-ver { font-family:'DM Mono',monospace; font-size:10px; color:var(--muted); background:var(--glass); padding:2px 8px; border-radius:4px; border:1px solid var(--border); }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="brand">
+      <img class="brand-logo" src="https://for-plan.co.jp/images/common/logo.png" alt="For-Plan"
+        onerror="this.style.display='none';document.getElementById('logoFb').style.display='block'">
+      <span class="brand-logo-fallback" id="logoFb">FOR-PLAN</span>
+      <div class="divider"></div>
+      <span class="brand-sub">Chatwork ツール</span>
+    </div>
+    <span class="badge-ent">Enterprise</span>
+  </div>
+
+  <!-- APIトークン入力 -->
+  <div class="token-section">
+    <div class="token-label">
+      <div class="dot" id="tokenDot"></div>
+      <span>Chatwork API トークン</span>
+    </div>
+    <div class="token-row">
+      <input class="token-input" id="tokenInput" type="password" placeholder="APIトークンを入力...">
+      <button class="btn-save" id="saveBtn">保存</button>
+    </div>
+    <div class="token-hint">
+      <a href="https://www.chatwork.com/service/packages/chatwork/subpackages/api/generate_token.php" target="_blank">
+        ここからAPIトークンを発行 →
+      </a>
+    </div>
+  </div>
+
+  <!-- カウンター -->
+  <div class="counter-wrap">
+    <div class="counter-num" id="unreadNum">—</div>
+    <div class="counter-detail">
+      <div class="counter-label">未読メッセージ</div>
+      <div class="counter-sub" id="counterSub">APIトークンを設定してください</div>
+    </div>
+  </div>
+
+  <!-- メインボタン -->
+  <button class="btn-main" id="mainBtn" disabled>
+    <span>✓</span>
+    <span id="btnLabel">すべて既読にする</span>
+  </button>
+
+  <!-- プログレス -->
+  <div class="progress-section" id="progressSection">
+    <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="progress-info">
+      <span id="progressText">処理中...</span>
+      <span id="progressPct">0%</span>
+    </div>
+  </div>
+
+  <!-- トースト -->
+  <div class="toast" id="toast">
+    <span id="toastIcon">✓</span>
+    <span id="toastMsg"></span>
+  </div>
+
+  <div class="footer">
+    <div class="footer-note">For-Plan 社内ツール<br>公式APIで確実に既読処理</div>
+    <span class="footer-ver">v2.0</span>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
